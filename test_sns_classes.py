@@ -4,6 +4,7 @@
 '''
 unit tests for the find module
 '''
+import sys
 import unittest
 import os
 import yaml
@@ -11,9 +12,12 @@ from collections import defaultdict
 from sns_classes import AnalysisItem
 from sns_classes import SnsWESAnalysisOutput
 from sns_classes import SnsAnalysisSample
-from util import log
 import config
 
+# add parent dir to sys.path to import util
+sys.path.insert(0, "..")
+from util import log
+sys.path.pop(0)
 
 scriptdir = os.path.dirname(os.path.realpath(__file__))
 fixture_dir = os.path.join(scriptdir, "fixtures")

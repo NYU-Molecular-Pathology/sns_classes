@@ -9,11 +9,14 @@ import sys
 import csv
 from collections import defaultdict
 
+# add parent dir to sys.path to import util
+sys.path.insert(0, "..")
 from util import find
 from util import log
 from util import tools
 from util.classes import LoggedObject
 from util.classes import AnalysisItem
+sys.path.pop(0)
 # import config
 
 # ~~~~ CUSTOM CLASSES ~~~~~~ #
