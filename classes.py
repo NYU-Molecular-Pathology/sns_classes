@@ -10,7 +10,9 @@ import csv
 from collections import defaultdict
 
 # add parent dir to sys.path to import util
-sys.path.insert(0, "..")
+scriptdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(scriptdir)
+sys.path.insert(0, parentdir)
 from util import find
 from util import log
 from util import tools
@@ -234,10 +236,6 @@ class SnsWESAnalysisOutput(AnalysisItem):
             if any(contains_errors.values()): self.logger.warning('Error messages were found in "summary-combined.wes.csv" file for samples: {0}'.format([sampleID for sampleID, value in contains_errors.items() if value == True]))
             return(any(contains_errors.values()))
 
-
-
-
-
     def validate(self):
         '''
         Check if the analysis is valid for downstream usage
@@ -268,7 +266,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
         self.logger.debug(validations)
 
         is_valid = all(validations.values())
-        self.logger.info('All run validations passed: {0}'.format(is_valid))
+        self.logger.info('Analysis output passed validation: {0}'.format(is_valid))
 
         return(is_valid)
 
@@ -282,14 +280,11 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # try to get the file if it wasn't passed
         if not samples_fastq_raw_file:
             samples_fastq_raw_file = self.static_files.get('samples_fastq_raw', None)
-
-        #
         if samples_fastq_raw_file:
             with open(samples_fastq_raw_file, "rb") as csvfile:
                 reader = csv.reader(csvfile)
                 for row in reader:
                     samplesIDs.append(row[0])
-
         else:
             self.logger.error('The "samples_fastq_raw" file could not be found for the analysis.')
         # unique entries only
@@ -380,19 +375,18 @@ class SnsAnalysisSample(AnalysisItem):
         for name, paths in analysis_config['files'].items():
             self.set_file(name = name, path = paths)
 
-
     def get_output_files(self, analysis_step, pattern):
         '''
         Get a file from the sample's analysis output
         '''
         # get the dirpath for the analysis step from the analysis dir; return None if there isn't one set for the provided step
-        search_dir = self.list_none(self.analysis.dirs[analysis_step])
+        search_dir = self.list_none(self.analysis_config['dirs'][analysis_step])
         patterns = [pattern, self.search_pattern]
         f = []
         if search_dir:
-            self.logger.debug("Searching for {0} files in {1}, dir: {2}".format(patterns, analysis_step, search_dir))
+            # self.logger.debug("Searching for {0} files in {1}, dir: {2}".format(patterns, analysis_step, search_dir))
             f = find.find(search_dir = search_dir, inclusion_patterns = patterns, search_type = 'file', match_mode = 'all')
-            self.logger.debug('Found: {0}'.format(f))
+            # self.logger.debug('Found: {0}'.format(f))
         else:
             self.logger.error("search_dir not found for {0}, dir: {1}".format(analysis_step, search_dir))
         return(f)

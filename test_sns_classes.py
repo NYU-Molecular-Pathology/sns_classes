@@ -9,9 +9,9 @@ import unittest
 import os
 import yaml
 from collections import defaultdict
-from sns_classes import AnalysisItem
-from sns_classes import SnsWESAnalysisOutput
-from sns_classes import SnsAnalysisSample
+from classes import AnalysisItem
+from classes import SnsWESAnalysisOutput
+from classes import SnsAnalysisSample
 import config
 
 # add parent dir to sys.path to import util
