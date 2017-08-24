@@ -57,7 +57,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # config dict for sns program settings
         self.sns_config = sns_config
         # timestamped ID for the analysis results, if supplied
-        self.results_id = results_id
+        self.results_id = str(results_id)
         # extra log handlers
         self.extra_handlers = extra_handlers
 
