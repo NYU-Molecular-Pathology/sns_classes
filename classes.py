@@ -70,6 +70,11 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
         # get the samples for the analysis
         # self.samples = self.get_samples()
+
+        # the object should try to validate itself upon initialization
+        # validation will fail if some static files are not present
+        # this should kill the program, since it means the analysis output is invalid
+        # maybe change this later if needed
         try:
             self.is_valid = self.validate()
         except IOError:
