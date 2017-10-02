@@ -65,11 +65,16 @@ class SnsWESAnalysisOutput(AnalysisItem):
         self._init_dirs()
         self._init_files()
         self._init_static_files()
+
         # self._init_analysis_config()
 
         # get the samples for the analysis
         # self.samples = self.get_samples()
-        self.is_valid = self.validate()
+        try:
+            self.is_valid = self.validate()
+        except IOError:
+            self.logger.error("Required files for sns analysis output could not be found in directory '{0}'. Exiting program.".format(self.dir))
+            sys.exit()
 
         # set up per-analysis logger
         # self.logger = log.build_logger(name = self.id)
