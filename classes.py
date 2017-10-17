@@ -82,11 +82,11 @@ class SnsWESAnalysisOutput(AnalysisItem):
             sys.exit()
 
         # set up per-analysis logger
-        # self.logger = log.build_logger(name = self.id)
-        # self.extra_handlers = extra_handlers
-        # if self.extra_handlers:
-        #     self.logger = log.add_handlers(logger = self.logger, handlers = extra_handlers)
-        # self.logger.debug("Initialized logging for analysis: {0}".format(self.id))
+        self.logger = log.build_logger(name = self.id)
+        self.extra_handlers = extra_handlers
+        if self.extra_handlers:
+            self.logger = log.add_handlers(logger = self.logger, handlers = extra_handlers)
+        self.logger.debug("Initialized logging for analysis: {0}".format(self.id))
     def _init_attrs(self):
         '''
         Initialize attributes for the analysis
