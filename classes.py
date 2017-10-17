@@ -195,7 +195,9 @@ class SnsWESAnalysisOutput(AnalysisItem):
             return(False)
         else:
             # True or False; any values are True = some log(s) contained error(s)
-            if any(contains_errors.values()): self.logger.warning('Error messages were found in qsub logs: {0}'.format([path for path, value in contains_errors.items() if value == True]))
+            if any(contains_errors.values()):
+                self.logger.error('Error messages were found in some qsub logs')
+                self.logger.debug('qsub log files containing errors: {0}'.format('\n'.join([path for path, value in contains_errors.items() if value == True])))
             return(any(contains_errors.values()))
 
     def get_summary_combined_contents(self, summary_combined_wes_file = None):
