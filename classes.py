@@ -333,6 +333,8 @@ class SnsAnalysisSample(AnalysisItem):
     samples = x.get_samples()
     sample = samples[0]
     sample.sns_config['analysis_output_index'].items()
+    pattern = sample.id + '.dd.ra.rc.bam'
+    sample.get_output_files(analysis_step = 'BAM-GATK-RA-RC', pattern = pattern)
     '''
 
     def __init__(self, id, analysis_config, sns_config, extra_handlers = None):
