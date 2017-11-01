@@ -287,7 +287,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
         '''
         Get the samples in the run from the samples_fastq_raw file
         '''
-        self.logger.debug("Getting sample ID's from the 'samples_fastq_raw' file for the analysis")
+        # self.logger.debug("Getting sample ID's from the 'samples_fastq_raw' file for the analysis")
         samplesIDs = []
         # try to get the file if it wasn't passed
         if not samples_fastq_raw_file:
@@ -299,6 +299,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
                     samplesIDs.append(row[0])
         else:
             self.logger.error('The "samples_fastq_raw" file could not be found for the analysis.')
+            # TODO: raise an exception here
         # unique entries only
         samplesIDs = list(set(samplesIDs))
         return(samplesIDs)
