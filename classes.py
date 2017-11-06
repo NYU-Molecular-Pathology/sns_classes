@@ -78,7 +78,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # maybe change this later if needed
         try:
             self.is_valid = self.validate()
-        # TODO: get rid of this try except !! 
+        # TODO: get rid of this try except !! also need to adjust tests for it...
         except IOError:
             self.logger.error("Required files for sns analysis output could not be found in directory '{0}'. Exiting program.".format(self.dir))
             sys.exit()
@@ -280,8 +280,8 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
         # check for qsub log errors
         validation = {
-            'qsub_log_errors_present': {
-            'status': self.check_qsub_log_errors_present(),
+            'no_qsub_log_errors_present': {
+            'status': not self.check_qsub_log_errors_present(),
             'note': 'Whether or not errors are present in the qsub logs'
             }
         }
@@ -289,8 +289,8 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
         # check for 'X' error entries in
         validation = {
-            'summary_combined_contains_errors': {
-            'status': self.summary_combined_contains_errors(),
+            'no_summary_combined_errors': {
+            'status': not self.summary_combined_contains_errors(),
             'note': 'Whether or not entries are present in the summary combined file'
             }
         }
