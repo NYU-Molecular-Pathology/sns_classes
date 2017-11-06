@@ -7,6 +7,7 @@ General utility classes for the program
 import os
 import sys
 import csv
+import json
 from collections import defaultdict
 
 # add parent dir to sys.path to import util
@@ -77,6 +78,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # maybe change this later if needed
         try:
             self.is_valid = self.validate()
+        # TODO: get rid of this try except !! 
         except IOError:
             self.logger.error("Required files for sns analysis output could not be found in directory '{0}'. Exiting program.".format(self.dir))
             sys.exit()
@@ -252,32 +254,52 @@ class SnsWESAnalysisOutput(AnalysisItem):
         '''
         Check if the analysis is valid for downstream usage
         '''
+        self.validations = {}
+
         # make sure dir exists
         dir_validation = os.path.exists(self.dir)
+        validation = {
+            'dir_exists': {
+            'status': os.path.exists(self.dir),
+            'note': 'Whether or not the analysis directory ({0}) exists'.format(self.dir)
+            }
+        }
+        self.validations.update(validation)
+
 
         # make sure all expected files exist
+        expected_static_files_existences = [(key, value, os.path.exists(value)) for key, value in self.expected_static_files().items()]
         static_files_validations = {}
-        for key, value in self.expected_static_files().items():
-            exists = os.path.exists(value)
-            self.logger.debug('{0} : {1} : {2}'.format(key, value, exists))
-            static_files_validations[key] = exists
+        validation = {
+            'expected_static_files_exist': {
+            'status': all([item[2] for item in expected_static_files_existences]),
+            'note': 'Whether or not all of the expected files in the analysis exist;\n{0}'.format('\n'.join([str(i) for i in expected_static_files_existences]))
+            }
+        }
+        self.validations.update(validation)
 
         # check for qsub log errors
-        qsub_log_error_validation = not self.check_qsub_log_errors_present()
+        validation = {
+            'qsub_log_errors_present': {
+            'status': self.check_qsub_log_errors_present(),
+            'note': 'Whether or not errors are present in the qsub logs'
+            }
+        }
+        self.validations.update(validation)
 
         # check for 'X' error entries in
-        summary_combined_validation = not self.summary_combined_contains_errors()
+        validation = {
+            'summary_combined_contains_errors': {
+            'status': self.summary_combined_contains_errors(),
+            'note': 'Whether or not entries are present in the summary combined file'
+            }
+        }
+        self.validations.update(validation)
+        all_valid = [subdict['status'] for key, subdict in self.validations.items()]
 
-        validations = {}
-        validations['dir_validation'] = dir_validation
-        validations['summary_combined_validation'] = summary_combined_validation
-        validations['qsub_log_error_validation'] = qsub_log_error_validation
-        validations['static_files_validations'] = all(static_files_validations.values())
+        self.logger.debug('analysis validations:\n{0}'.format(json.dumps(self.validations, indent = 4)))
 
-
-        self.logger.debug(validations)
-
-        is_valid = all(validations.values())
+        is_valid = all(all_valid)
         self.logger.info('Analysis output passed validation: {0}'.format(is_valid))
 
         return(is_valid)
