@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 unit tests for the find module
-'''
+"""
 import sys
 import unittest
 import os
@@ -49,30 +49,30 @@ class TestAnalysisItem(unittest.TestCase):
         self.assertTrue(True, 'Demo True assertion')
 
     def test_AnalysisItem_files_type(self):
-        '''
+        """
         Test a NextSeq demo run that should be valid
-        '''
+        """
         x = self.analysis_item1
         self.assertTrue(isinstance(x.files, defaultdict), "AnalysisItem 'files' is not type 'defaultdict'")
 
     def test_AnalysisItem_files_entry1(self):
-        '''
+        """
         Test a NextSeq demo run that should be valid
-        '''
+        """
         x = self.analysis_item1
         self.assertTrue(isinstance(x.files[0], list), "AnalysisItem 'files' entry is not type 'list'")
 
     def test_AnalysisItem_files_entry_missingkey(self):
-        '''
+        """
         Test a NextSeq demo run that should be valid
-        '''
+        """
         item = self.analysis_item1.get_files('doesntexist')
         self.assertTrue(isinstance(item, list), "AnalysisItem 'get_files' method key did not return type 'list' for missing key")
 
     def test_AnalysisItem_files_entry_listnone(self):
-        '''
+        """
         Test a NextSeq demo run that should be valid
-        '''
+        """
         item = self.analysis_item1.list_none(l = self.analysis_item1.get_files('doesntexist'))
         self.assertIsNone(item, "AnalysisItem 'list_none' method key did not return type 'None' for empty list")
 
