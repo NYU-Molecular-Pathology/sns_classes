@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-General utility classes for the program
+Object classes for abstracting & interacting with ``sns`` pipeline output
 """
 import os
 import sys
@@ -23,31 +23,58 @@ sys.path.pop(0)
 # import config
 
 # ~~~~ CUSTOM CLASSES ~~~~~~ #
+class AnalysisItemMissing(Exception):
+    """
+    An exception to use if an item from the analysis is missing
+
+    Examples
+    --------
+    Example usage::
+
+        raise AnalysisItemMissing(message = err_message, errors = '')
+
+    """
+    def __init__(self, message, errors):
+        super(AnalysisItemMissing, self).__init__(message)
+        self.errors = errors
+
 class SnsWESAnalysisOutput(AnalysisItem):
     """
     Container for metadata about a sns WES targeted exome sequencing run analysis
     """
     def __init__(self, dir, id, sns_config, results_id = None, extra_handlers = None):
         """
-        Initialize the object
+        Parameters
+        ----------
+        dir: str
+            path to the directory containing ``sns`` pipeline output
+        id: str
+            ID for the analysis, typically the parent analysis output dir name, corresponding to a NextSeq run ID
+        results_id: str
+            typically a time-stamped ID of the results for the analysis, and the subdir name for the anaysis output
+        sns_config: dict
+            configuration items for the run; requires 'analysis_output_index' dict, and 'email_recipients'
+        extra_handlers: list
+            a list of Filehandlers, or ``None``
 
-        dir = path to the analysis output directory
-        id = ID for the analysis, typically the parent analysis output dir name, corresponding to a NextSeq run ID
-        results_id = typically a time-stamped ID of the results for the analysis, and the subdir name for the anaysis output
+        Examples
+        --------
+        Example usage::
 
-        e.g.:
-        dir = "/ifs/data/molecpathlab/NGS580_WES/170623_NB501073_0015_AHY5Y3BGX2/results_2017-06-26_20-11-26"
-        id = "170623_NB501073_0015_AHY5Y3BGX2"
-        results_id = "results_2017-06-26_20-11-26"
+            import config
+            from sns_classes import SnsWESAnalysisOutput
+            analysis_dir = "/ifs/data/molecpathlab/NGS580_WES/170623_NB501073_0015_AHY5Y3BGX2/results_2017-06-26_20-11-26"
+            analysis_id = "170623_NB501073_0015_AHY5Y3BGX2"
+            results_id = "results_2017-06-26_20-11-26"
+            analysis = SnsWESAnalysisOutput(dir = analysis_dir, id = analysis_id, results_id = results_id, sns_config = config.sns)
 
-        sns_config = dictionary of configuration items for the run; requires 'analysis_output_index' dict, and 'email_recipients'
-        extra_filehandlers = None or a list of handlers to add
+            import config
+            from sns_classes import SnsWESAnalysisOutput
+            analysis_dir = '/ifs/data/molecpathlab/scripts/snsxt/snsxt/fixtures/sns_output/sns_analysis1'
+            analysis_id = "sample_analysis"
+            results_id = "results1"
+            analysis = SnsWESAnalysisOutput(dir = analysis_dir, id = analysis_id, results_id = results_id, sns_config = config.sns)
 
-
-        from sns_classes import SnsWESAnalysisOutput
-        import config
-        d = '/ifs/data/molecpathlab/scripts/snsxt/snsxt/fixtures/sns_output/sns_analysis1'
-        x = SnsWESAnalysisOutput(dir = d, id = 'sns_analysis1', sns_config = config.sns)
         """
         AnalysisItem.__init__(self, id = id, extra_handlers = extra_handlers)
         # ID for the analysis run output; should match NextSeq ID
@@ -91,14 +118,14 @@ class SnsWESAnalysisOutput(AnalysisItem):
         self.logger.debug("Initialized logging for analysis: {0}".format(self.id))
     def _init_attrs(self):
         """
-        Initialize attributes for the analysis
+        Initializes attributes for the analysis
         """
         self.email_recipients = self.sns_config['email_recipients']
         self.analysis_output_index = self.sns_config['analysis_output_index']
 
     def _init_dirs(self):
         """
-        Initialize the paths  attributes for items associated with the sequencing run
+        Initializes the path attributes for items associated with the sequencing run
         from list of dirnames and filename patterns for the output steps in the sns WES analysis output
         """
         for name, attributes in self.analysis_output_index.items():
@@ -107,20 +134,26 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def _init_static_files(self):
         """
-        Initialize paths to files that should always exist in the same location for an analysis output directory
+        Initializes paths to files that should always exist in the same location for an analysis output directory
         """
         self.static_files = {key: value for key, value in self.expected_static_files().items()}
 
     def _init_files(self):
         """
-        Initialize the paths to files that might not have consistent naming
+        Initializes the paths to files that might not have consistent naming
+
         including: the targets .bed file with the chromosome target regions
         """
         self.set_file(name = 'targets_bed', path = find.find(search_dir = self.dir, inclusion_patterns = "*.bed", exclusion_patterns = '*.pad10.bed', search_type = 'file', num_limit = 1, level_limit = 0))
 
     def get_analysis_config(self):
         """
-        Return a dictionary of config values to pass to child Sample objects
+        Creates a dictionary of config values to pass to child Sample objects
+
+        Returns
+        -------
+        dict
+            a dictionary of configuration values
         """
         analysis_config = {}
         analysis_config['analysis_id'] = self.id
@@ -138,7 +171,11 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def expected_static_files(self):
         """
-        Return a dict of files that are expected to exist in the analysis dir
+        Creates a dictionary of files that are expected to exist in the analysis output
+        Returns
+        -------
+        dict
+            a dictionary of files that are expected to exist in the analysis dir
         """
         expected_files = {}
         # samplesheet file with the run's paired samples
@@ -153,18 +190,25 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def get_qsub_logfiles(self, logdir = None):
         """
-        Get the list of log files from the qsub dir
+        Gets the list of log files from the analysis' qsub logs directory
 
-        logdir = x.list_none(x.get_dirs('logs-qsub'))
-        log_files = [item for item in find.find(logdir, search_type = 'file')]
+        Parameters
+        ----------
+        logdir: str
+            the path to the qsub log directory. If ``None``, a directory called ``logs-qsub`` will be searched for in the analysis output directory and used instead
+
+        Returns
+        -------
+        list
+            a list of file paths to qsub logs
+
         """
         log_files = []
         # try to get the logdir from self
         if not logdir:
             logdir = self.list_none(self.get_dirs('logs-qsub'))
         if not logdir:
-            # TODO: need an exception here
-            self.logger.error('Qsub log dir not found.')
+            raise AnalysisItemMissing(message = 'Qsub log dir not found for the analysis', errors = '')
         else:
             # find all the log files
             for item in find.find(logdir, search_type = 'file'):
@@ -173,15 +217,24 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def check_qsub_log_errors_present(self, log_files = None, err_patterns = ("ERROR:",)):
         """
-        Check the qsub logs for errors
+        Checks the qsub log files for errors, by searching for lines that include known 'error' patterns
+
+        Parameters
+        ----------
+        log_files: list
+            a list of paths to qsub log files
+
+        Returns
+        -------
+        bool
+            ``True`` or ``False`` whether or not errors are detected in the qsub log files. If ``True``, the paths to files with error messages will be printed in the log.
         """
         contains_errors = {}
         # try to find the log files from self
         if not log_files:
             log_files = self.get_qsub_logfiles()
         if not log_files:
-            # TODO: need an exception here
-            self.logger.error('Qsub log files not found.')
+            raise AnalysisItemMissing(message = 'Qsub log files not found for the analysis.', errors = '')
 
         # check all the files for the patterns
         for log_file in log_files:
@@ -204,14 +257,23 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def get_summary_combined_contents(self, summary_combined_wes_file = None):
         """
-        Get the contents of the 'summary-combined.wes.csv' file
+        Gets the contents of the 'summary-combined.wes.csv' file
+
+        Parameters
+        ----------
+        summary_combined_wes_file: str
+            the path to the 'summary-combined.wes.csv' file, otherwise if ``None`` the file will be retrieved automatically from the analysis output
+
+        Returns
+        -------
+        list
+            a list of dictionaries representing the entries in the file, as read in by ``csv.DictReader``
         """
         # try to get the file from self if not passed
         if not summary_combined_wes_file:
             summary_combined_wes_file = self.static_files.get('summary_combined_wes', None)
         if not summary_combined_wes_file:
-            # TODO: put an exception here
-            self.logger.error('Could not find the summary_combined_wes_file')
+            raise AnalysisItemMissing(message = 'Could not find the summary_combined_wes_file ("summary-combined.wes.csv") for the analysis.', errors = '')
 
         # try to open it anyway
         rows = []
@@ -223,8 +285,19 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def summary_combined_contains_errors(self, summary_combined_wes_rows = None, err_pattern = 'X'):
         """
-        Check the 'summary-combined.wes.csv' file for errors; any entry in the sheet that looks like 'X'
-        summary_combined_wes_rows = list of dicts read in by CSV DictReader
+        Checks the 'summary-combined.wes.csv' file for errors; any entry in the sheet that looks like 'X'
+
+        Parameters
+        ----------
+        summary_combined_wes_rows: list
+            a list of dictionaries representing the entries in the file, as read in by ``csv.DictReader``
+        err_pattern: str
+            error pattern to search for in the file. Defaults to 'X'
+
+        Returns
+        -------
+        bool
+            ``True`` or ``False`` whether or not errors were detected in the file
         """
         # try to get the contents from self if not passed
         if not summary_combined_wes_rows:
@@ -252,7 +325,12 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def validate(self):
         """
-        Check if the analysis is valid for downstream usage
+        Checks if the analysis is considered valid for downstream usage
+
+        Returns
+        -------
+        bool
+            ``True`` or ``False`` whether or not the analysis passes validation criteria
         """
         self.validations = {}
 
@@ -307,7 +385,17 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
     def get_samplesIDs_from_samples_fastq_raw(self, samples_fastq_raw_file = None):
         """
-        Get the samples in the run from the samples_fastq_raw file
+        Gets the samples in the run from the samples_fastq_raw file
+
+        Parameters
+        ----------
+        samples_fastq_raw_file: str
+            path to the samples_fastq_raw_file for the analysis. If ``None``, it is retrieved automatically from the analysis output
+
+        Returns
+        -------
+        list
+            a list of sample ID's of the samples in the analysis
         """
         # self.logger.debug("Getting sample ID's from the 'samples_fastq_raw' file for the analysis")
         samplesIDs = []
@@ -320,16 +408,24 @@ class SnsWESAnalysisOutput(AnalysisItem):
                 for row in reader:
                     samplesIDs.append(row[0])
         else:
-            self.logger.error('The "samples_fastq_raw" file could not be found for the analysis.')
-            # TODO: raise an exception here
+            raise AnalysisItemMissing(message = 'The "samples_fastq_raw" file could not be found for the analysis.', errors = '')
         # unique entries only
         samplesIDs = list(set(samplesIDs))
         return(samplesIDs)
 
     def get_samples(self, samplesIDs = None):
         """
-        Get the samples for the analysis
-        samplesIDs is a list of character string sample ID's
+        Gets the samples for the analysis, as ``SnsAnalysisSample`` objects
+
+        Parameters
+        ----------
+        samplesIDs: list
+            a list of character strings representing sample ID's
+
+        Returns
+        -------
+        list
+            a list of ``SnsAnalysisSample`` objects
         """
         samples = []
         # try to get the sample IDs
@@ -346,21 +442,38 @@ class SnsWESAnalysisOutput(AnalysisItem):
 
 class SnsAnalysisSample(AnalysisItem):
     """
-    Container for metadata about a sample in the sns WES targeted exome sequencing run analysis output
+    Container for metadata about a single sample in the sns WES targeted exome sequencing run analysis output
 
+    Examples
+    --------
+    Example usage::
 
-    from sns_classes import SnsWESAnalysisOutput
-    import config
-    d = '/ifs/data/molecpathlab/scripts/snsxt/snsxt/fixtures/sns_output/sns_analysis1'
-    x = SnsWESAnalysisOutput(dir = d, id = 'sns_analysis1', sns_config = config.sns)
-    samples = x.get_samples()
-    sample = samples[0]
-    sample.sns_config['analysis_output_index'].items()
-    pattern = sample.id + '.dd.ra.rc.bam'
-    sample.get_output_files(analysis_step = 'BAM-GATK-RA-RC', pattern = pattern)
+        from sns_classes import SnsWESAnalysisOutput
+        import config
+        d = '/ifs/data/molecpathlab/scripts/snsxt/snsxt/fixtures/sns_output/sns_analysis1'
+        x = SnsWESAnalysisOutput(dir = d, id = 'sns_analysis1', sns_config = config.sns)
+        samples = x.get_samples()
+        sample = samples[0]
+        sample.sns_config['analysis_output_index'].items()
+        # note: this file retrieval method is deprecated and should not be used
+        pattern = sample.id + '.dd.ra.rc.bam'
+        sample.get_output_files(analysis_step = 'BAM-GATK-RA-RC', pattern = pattern)
+
     """
 
     def __init__(self, id, analysis_config, sns_config, extra_handlers = None):
+        """
+        Parameters
+        ----------
+        id: str
+            ID for the sample
+        analysis_config: dict
+            dictionary of configuration settings passed on from the parent ``SnsWESAnalysisOutput`` object
+        sns_config: dict
+            dictionary of configuration settings passed on from the parent ``SnsWESAnalysisOutput`` object
+        extra_handlers: list
+            a list of Filehandlers, or ``None``
+        """
         AnalysisItem.__init__(self, id = id, extra_handlers = extra_handlers)
         self.id = str(id)
         # set up per-sample logger
@@ -382,7 +495,12 @@ class SnsAnalysisSample(AnalysisItem):
 
     def _init_analysis_attrs(self, analysis_config = None):
         """
-        Initialize the attributes passed from the parent analysis
+        Initializes object attributes passed from the parent analysis, for convenience
+
+        Parameters
+        ----------
+        analysis_config: dict
+            dictionary of configuration settings
         """
         if not analysis_config:
             analysis_config = self.analysis_config
@@ -394,7 +512,12 @@ class SnsAnalysisSample(AnalysisItem):
 
     def _init_dirs(self, analysis_config = None):
         """
-        Initialize the paths to dirs for the sample in the analysis
+        Initializes the paths to dirs for the sample in the analysis
+
+        Parameters
+        ----------
+        analysis_config: dict
+            dictionary of configuration settings
         """
         if not analysis_config:
             analysis_config = self.analysis_config
@@ -404,7 +527,12 @@ class SnsAnalysisSample(AnalysisItem):
 
     def _init_files(self, analysis_config = None):
         """
-        Initialize the paths to files in the analysis
+        Initializes the paths to files which were created dynamically based on the settings and samples of the analysis at run time
+
+        Parameters
+        ----------
+        analysis_config: dict
+            dictionary of configuration settings
         """
         if not analysis_config:
             analysis_config = self.analysis_config
@@ -414,7 +542,19 @@ class SnsAnalysisSample(AnalysisItem):
 
     def get_output_files(self, analysis_step, pattern):
         """
-        Get a file from the sample's analysis output
+        Gets a file from the sample's analysis output, based on the ``analysis_output_index`` config listing the expected file types at each output, in addition to the criteria specified by the function args
+
+        Parameters
+        ----------
+        analysis_step: str
+            the name of a directory in the analysis output from which to search for a sample's output file
+        pattern: str
+            a filename pattern to use when searching for the file
+
+        Returns
+        -------
+        list
+            a list of files for the sample from an analysis step
         """
         # get the dirpath for the analysis step from the analysis dir; return None if there isn't one set for the provided step
         search_dir = self.list_none(self.analysis_config['dirs'][analysis_step])
@@ -425,5 +565,5 @@ class SnsAnalysisSample(AnalysisItem):
             f = find.find(search_dir = search_dir, inclusion_patterns = patterns, search_type = 'file', match_mode = 'all')
             # self.logger.debug('Found: {0}'.format(f))
         else:
-            self.logger.error("search_dir not found for {0}, dir: {1}".format(analysis_step, search_dir))
+            raise AnalysisItemMissing(message = "search_dir not found for {0}, dir: {1}".format(analysis_step, search_dir), errors = '')
         return(f)
