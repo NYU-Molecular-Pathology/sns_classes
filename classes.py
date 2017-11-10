@@ -38,11 +38,27 @@ class AnalysisItemMissing(Exception):
         super(AnalysisItemMissing, self).__init__(message)
         self.errors = errors
 
+class AnalysisInvalid(Exception):
+    """
+    An exception to use if the analysis is determined to be invalid
+
+    Examples
+    --------
+    Example usage::
+
+        raise AnalysisInvalid(message = err_message, errors = '')
+
+    """
+    def __init__(self, message, errors):
+        super(AnalysisInvalid, self).__init__(message)
+        self.errors = errors
+
+
 class SnsWESAnalysisOutput(AnalysisItem):
     """
     Container for metadata about a sns WES targeted exome sequencing run analysis
     """
-    def __init__(self, dir, id, sns_config, results_id = None, extra_handlers = None):
+    def __init__(self, dir, id, sns_config, results_id = None, extra_handlers = None, debug = False):
         """
         Parameters
         ----------
@@ -56,6 +72,8 @@ class SnsWESAnalysisOutput(AnalysisItem):
             configuration items for the run; requires 'analysis_output_index' dict, and 'email_recipients'
         extra_handlers: list
             a list of Filehandlers, or ``None``
+        debug: bool
+            whether the analysis output should be intitialized in `debug` mode which skips validation
 
         Examples
         --------
@@ -103,12 +121,13 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # validation will fail if some static files are not present
         # this should kill the program, since it means the analysis output is invalid
         # maybe change this later if needed
-        try:
+        # try:
+        if not debug: # True = dont validate, False = validate
             self.is_valid = self.validate()
-        # TODO: get rid of this try except !! also need to adjust tests for it...
-        except IOError:
-            self.logger.error("Required files for sns analysis output could not be found in directory '{0}'. Exiting program.".format(self.dir))
-            sys.exit()
+            # if not self.is_valid:
+            #     err_message = 'Analysis did not pass validations:\n{0}'.format(self.__repr__())
+            #     raise AnalysisInvalid(message = err_message, errors = '')
+            # # Don't raise here, because it already gets raised in run.py
 
         # set up per-analysis logger
         self.logger = log.build_logger(name = self.id)
@@ -116,6 +135,10 @@ class SnsWESAnalysisOutput(AnalysisItem):
         if self.extra_handlers:
             self.logger = log.add_handlers(logger = self.logger, handlers = extra_handlers)
         self.logger.debug("Initialized logging for analysis: {0}".format(self.id))
+
+    def __repr__(self):
+        return("SnsWESAnalysisOutput {0} ({1}) located at {2}".format(self.id, self.results_id, self.dir))
+
     def _init_attrs(self):
         """
         Initializes attributes for the analysis
@@ -435,8 +458,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
             samples.append(SnsAnalysisSample(id = samplesID, analysis_config = self.get_analysis_config(), sns_config = self.sns_config, extra_handlers = self.extra_handlers))
         return(samples)
 
-    def __repr__(self):
-        return("SnsWESAnalysisOutput {0} ({1}) located at {2}".format(self.id, self.results_id, self.dir))
+
 
 
 
