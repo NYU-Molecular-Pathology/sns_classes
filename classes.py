@@ -470,8 +470,9 @@ class SnsAnalysisSample(AnalysisItem):
     --------
     Example usage::
 
-        from sns_classes import SnsWESAnalysisOutput
+        from sns_classes.classes import SnsWESAnalysisOutput
         import config
+        config.sns.update({'email_recipients': 'foo@bar.edu'})
         d = '/ifs/data/molecpathlab/scripts/snsxt/snsxt/fixtures/sns_output/sns_analysis1'
         x = SnsWESAnalysisOutput(dir = d, id = 'sns_analysis1', sns_config = config.sns)
         samples = x.get_samples()
