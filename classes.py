@@ -102,19 +102,26 @@ class SnsWESAnalysisOutput(AnalysisItem):
         AnalysisItem.__init__(self, id = id, extra_handlers = extra_handlers)
         # ID for the analysis run output; should match NextSeq ID
         self.id = str(id)
+        self._init_logger(extra_handlers = extra_handlers)
 
         # path to the directory containing analysis output
         self.dir = os.path.abspath(dir)
+
         # config dict for sns program settings
         if not sns_config:
+            # if not config passed, used default module
             self.sns_config = config.sns
         else:
             self.sns_config = sns_config
+        # check that 'analysis_output_index' is in sns_config, else use default one
+        if not self.sns_config.get('analysis_output_index', None):
+            self.logger.debug('"analysis_output_index" key not found in passed "sns_config" dict, loading default sns_config instead')
+            self.sns_config = config.sns
         # TODO: this is deprecated, need to remove it! Dont use it!!
+
+
         # timestamped ID for the analysis results, if supplied
         self.results_id = str(results_id)
-        # extra log handlers
-        self.extra_handlers = extra_handlers
 
         self._init_attrs()
         self._init_dirs()
@@ -138,15 +145,26 @@ class SnsWESAnalysisOutput(AnalysisItem):
             #     raise AnalysisInvalid(message = err_message, errors = '')
             # # Don't raise here, because it already gets raised in run.py
 
-        # set up per-analysis logger
-        self.logger = log.build_logger(name = self.id)
-        self.extra_handlers = extra_handlers
-        if self.extra_handlers:
-            self.logger = log.add_handlers(logger = self.logger, handlers = extra_handlers)
-        self.logger.debug("Initialized logging for analysis: {0}".format(self.id))
+
 
     def __repr__(self):
         return("SnsWESAnalysisOutput {0} ({1}) located at {2}".format(self.id, self.results_id, self.dir))
+
+    def _init_logger(self, extra_handlers = None):
+        """
+        Initializes the logger for the object
+
+        Todo
+        ----
+        This appears to be causing double log messages, review this logger and determine if its necessary to keep it
+        """
+        # extra log handlers
+        self.extra_handlers = extra_handlers
+        # set up per-analysis logger
+        self.logger = log.build_logger(name = self.id)
+        if self.extra_handlers:
+            self.logger = log.add_handlers(logger = self.logger, handlers = extra_handlers)
+        self.logger.debug("Initialized logging for analysis: {0}".format(self.id))
 
     def _init_attrs(self):
         """
