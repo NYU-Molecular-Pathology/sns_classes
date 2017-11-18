@@ -20,7 +20,7 @@ from util import tools
 from util.classes import LoggedObject
 from util.classes import AnalysisItem
 sys.path.pop(0)
-# import config
+import config # config local to this dir
 
 # ~~~~ CUSTOM CLASSES ~~~~~~ #
 class AnalysisItemMissing(Exception):
@@ -93,6 +93,11 @@ class SnsWESAnalysisOutput(AnalysisItem):
             results_id = "results1"
             analysis = SnsWESAnalysisOutput(dir = analysis_dir, id = analysis_id, results_id = results_id, sns_config = config.sns)
 
+        Todo
+        ----
+        Reverted ``sns_config`` to being loaded from the config local to this file's dir. Need to deprecate this config entirely. Do not use it anymore.
+
+
         """
         AnalysisItem.__init__(self, id = id, extra_handlers = extra_handlers)
         # ID for the analysis run output; should match NextSeq ID
@@ -101,7 +106,8 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # path to the directory containing analysis output
         self.dir = os.path.abspath(dir)
         # config dict for sns program settings
-        self.sns_config = sns_config
+        self.sns_config = config.sns
+        # TODO: this is deprecated, need to remove it! Dont use it!!
         # timestamped ID for the analysis results, if supplied
         self.results_id = str(results_id)
         # extra log handlers
@@ -142,6 +148,10 @@ class SnsWESAnalysisOutput(AnalysisItem):
     def _init_attrs(self):
         """
         Initializes attributes for the analysis
+
+        Todo
+        ----
+        This is obtaining configs from the local config file; don't use these configs anymore, dont use these attributes, need to remove them
         """
         self.email_recipients = self.sns_config['email_recipients']
         self.analysis_output_index = self.sns_config['analysis_output_index']
@@ -150,6 +160,10 @@ class SnsWESAnalysisOutput(AnalysisItem):
         """
         Initializes the path attributes for items associated with the sequencing run
         from list of dirnames and filename patterns for the output steps in the sns WES analysis output
+
+        Todo
+        ----
+        This is obtaining configs from the local config file; don't use these configs anymore, dont use these attributes, need to remove them. When using this module with ``snsxt``, the tasks should instead get the files explicitly from the tasks' ``input_dir``
         """
         for name, attributes in self.analysis_output_index.items():
             if name not in ['_parent']:
