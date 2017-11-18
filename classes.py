@@ -58,7 +58,7 @@ class SnsWESAnalysisOutput(AnalysisItem):
     """
     Container for metadata about a sns WES targeted exome sequencing run analysis
     """
-    def __init__(self, dir, id, sns_config, results_id = None, extra_handlers = None, debug = False):
+    def __init__(self, dir, id, sns_config = None, results_id = None, extra_handlers = None, debug = False):
         """
         Parameters
         ----------
@@ -106,7 +106,10 @@ class SnsWESAnalysisOutput(AnalysisItem):
         # path to the directory containing analysis output
         self.dir = os.path.abspath(dir)
         # config dict for sns program settings
-        self.sns_config = config.sns
+        if not sns_config:
+            self.sns_config = config.sns
+        else:
+            self.sns_config = sns_config
         # TODO: this is deprecated, need to remove it! Dont use it!!
         # timestamped ID for the analysis results, if supplied
         self.results_id = str(results_id)
