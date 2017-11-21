@@ -8,7 +8,9 @@ import sys
 import unittest
 import os
 import yaml
+import csv
 from collections import defaultdict
+from classes import AnalysisItemMissing
 from classes import AnalysisItem
 from classes import SnsWESAnalysisOutput
 from classes import SnsAnalysisSample
@@ -83,36 +85,46 @@ class TestSnsWESAnalysisOutput(unittest.TestCase):
         # remove the handlers because they are too verbose here
         self.analysis_output_1.logger = log.remove_all_handlers(logger = self.analysis_output_1.logger)
 
-        self.sns_analysis1_nosettings = SnsWESAnalysisOutput(dir = sns_analysis1_nosettings_dir, id = 'analysis1_nosettings', sns_config = configs)
+        self.sns_analysis1_nosettings = SnsWESAnalysisOutput(dir = sns_analysis1_nosettings_dir, id = 'analysis1_nosettings', sns_config = configs, debug = True)
         self.sns_analysis1_nosettings.logger = log.remove_all_handlers(logger = self.sns_analysis1_nosettings.logger)
 
-        self.sns_analysis1_qsuberrors = SnsWESAnalysisOutput(dir = sns_analysis1_qsuberrors_dir, id = 'sns_analysis1_qsuberrors', sns_config = configs)
+        self.sns_analysis1_qsuberrors = SnsWESAnalysisOutput(dir = sns_analysis1_qsuberrors_dir, id = 'sns_analysis1_qsuberrors', sns_config = configs, debug = True)
         self.sns_analysis1_qsuberrors.logger = log.remove_all_handlers(logger = self.sns_analysis1_qsuberrors.logger)
 
-        self.sns_analysis1_summaryX = SnsWESAnalysisOutput(dir = sns_analysis1_summaryX_dir, id = 'sns_analysis1_summaryX', sns_config = configs)
+        self.sns_analysis1_summaryX = SnsWESAnalysisOutput(dir = sns_analysis1_summaryX_dir, id = 'sns_analysis1_summaryX', sns_config = configs, debug = True)
         self.sns_analysis1_summaryX.logger = log.remove_all_handlers(logger = self.sns_analysis1_summaryX.logger)
 
 
     def tearDown(self):
         del self.analysis_output_1
         del self.sns_analysis1_nosettings
+        del self.sns_analysis1_qsuberrors
+        del self.sns_analysis1_summaryX
 
     def test_invalid_path(self):
         analysis_dir = os.path.join(sns_output_dir, 'foo')
         # x = SnsWESAnalysisOutput(dir = analysis_dir, id = 'foo', sns_config = configs)
         # x.logger = log.remove_all_handlers(logger = x.logger)
         # self.assertFalse(x.validate(), 'Analysis dir with invalid path returns True validation')
-        with self.assertRaises(IOError):
+        with self.assertRaises(AnalysisItemMissing):
             SnsWESAnalysisOutput(dir = analysis_dir, id = 'foo', sns_config = configs)
 
     def test_no_settings(self):
-        self.assertFalse(self.sns_analysis1_nosettings.validate(), 'Analysis dir with no settings file returned True validation')
+        self.assertRaises(AnalysisItemMissing, self.sns_analysis1_nosettings.validate)
+
 
     def test_qsub_errors(self):
         self.assertFalse(self.sns_analysis1_qsuberrors.validate(), 'Analysis dir with no settings file returned True validation')
 
     def test_summary_combined_errors(self):
-        self.assertFalse(self.sns_analysis1_summaryX.validate(), 'Analysis dir with errors in summary-combined file returned True validation')
+        summary_combined_wes_file = self.sns_analysis1_summaryX.static_files.get('summary_combined_wes', None)
+        rows = []
+        with open(summary_combined_wes_file, 'rb') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                rows.append(row)
+        contains_errors = self.sns_analysis1_summaryX.summary_combined_contains_errors(summary_combined_wes_rows = rows, err_pattern = 'X')
+        self.assertTrue(contains_errors)
 
     def test_valid_analysis_output(self):
         self.assertTrue(self.analysis_output_1.validate(), 'Valid analysis dir returned False validation')
